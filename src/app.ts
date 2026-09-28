@@ -27,6 +27,10 @@ export function createApp(deps: { apiKey: string; store: IncidentStore; replayer
       sendError(res, 409, 'DUPLICATE_ID', 'A submission with this id already exists');
       return;
     }
+    if (result === 'full') {
+      sendError(res, 507, 'STORE_FULL', 'Submission store is at capacity');
+      return;
+    }
     res.status(201).json(parsed.data);
   });
   app.get('/incidents', (req, res) => {
@@ -37,6 +41,10 @@ export function createApp(deps: { apiKey: string; store: IncidentStore; replayer
     const submission = store.get(req.params.id);
     if (!submission) { sendError(res, 404, 'NOT_FOUND', 'Incident not found'); return; }
     res.json(submission);
+  });
+  app.get('/incidents/:id/replays', (req, res) => {
+    if (!store.get(req.params.id)) { sendError(res, 404, 'NOT_FOUND', 'Incident not found'); return; }
+    res.json(store.listReplays().filter(entry => entry.incidentId === req.params.id));
   });
   app.post('/incidents/:id/replay', async (req, res) => {
     const submission = store.get(req.params.id);
